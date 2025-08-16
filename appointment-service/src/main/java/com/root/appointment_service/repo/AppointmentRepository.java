@@ -7,13 +7,14 @@ import java.time.Instant;
 import java.util.*;
 
 public interface AppointmentRepository extends JpaRepository<Appointment, UUID> {
-    @Query("select (count(a)>0) from Appointment a where a.doctorId=:doctorId and a.status in :active and a.startAt < :end and a.endAt > :start")
-    boolean doctorHasOverlap(@Param("doctorId") UUID doctorId, @Param("start") Instant start, @Param("end") Instant end,
-            @Param("active") Collection<AppointmentStatus> active);
+        @Query("select (count(a)>0) from Appointment a where a.doctorId=:doctorId and a.status in :active and a.startAt < :end and a.endAt > :start")
+        boolean doctorHasOverlap(@Param("doctorId") UUID doctorId, @Param("start") Instant start,
+                        @Param("end") Instant end,
+                        @Param("active") Collection<AppointmentStatus> active);
 
-    @Query("select (count(a)>0) from Appointment a where a.patientId=:patientId and a.status in :active and a.startAt < :end and a.endAt > :start")
-    boolean patientHasOverlap(@Param("patientId") UUID patientId, @Param("start") Instant start,
-            @Param("end") Instant end, @Param("active") Collection<AppointmentStatus> active);
+        @Query("select (count(a)>0) from Appointment a where a.patientId=:patientId and a.status in :active and a.startAt < :end and a.endAt > :start")
+        boolean patientHasOverlap(@Param("patientId") UUID patientId, @Param("start") Instant start,
+                        @Param("end") Instant end, @Param("active") Collection<AppointmentStatus> active);
 
-    List<Appointment> findByPatientIdOrderByStartAtAsc(UUID patientId);
+        List<Appointment> findByPatientIdOrderByStartAtAsc(UUID patientId);
 }
