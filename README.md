@@ -1,91 +1,66 @@
-🏥 Sistema Clínico — Descripción General
-
-Arquitectura de microservicios para gestionar turnos médicos con comunicación REST + eventos AMQP, persistencia en PostgreSQL (Neon) y orquestación con Docker. El flujo cubre: agendar 📅, modificar 🔄, anular ❌ y consultar 🔎 turnos, más notificaciones por email ✉️.
-
+Sistema Clínico
+🏥 Descripción General
+Sistema basado en una arquitectura de microservicios para gestionar turnos médicos, utilizando comunicación REST y eventos AMQP, con persistencia en PostgreSQL (Neon) y orquestación mediante Docker. El flujo principal incluye: agendar 📅, modificar 🔄, anular ❌ y consultar 🔎 turnos, junto con notificaciones por email ✉️.
 🧩 Componentes
 
-🩺 patient-service (8081)
-CRUD de pacientes. Emite eventos patient.created/updated/deleted.
+🩺 patient-service (8081)Gestiona el CRUD de pacientes. Emite eventos patient.created, patient.updated y patient.deleted.
 
-🧑‍⚕️ doctor-service (8080)
-CRUD de médicos y especialidades. Emite doctor.created/updated/deleted.
+🧑‍⚕️ doctor-service (8080)Administra el CRUD de médicos y especialidades. Emite eventos doctor.created, doctor.updated y doctor.deleted.
 
-📅 appointment-service (8083)
-Reglas de agenda:
+📅 appointment-service (8083)Maneja las reglas de agenda:  
 
-evita solapes para paciente y médico,
+Evita solapamientos de turnos para pacientes y médicos.  
+Configuración de slots (ej., 30 minutos).  
+Asignación por especialidad (permite elegir médico si no se especifica doctorId).  
+Publica eventos appointment.created, appointment.rescheduled y appointment.cancelled.
 
-slots configurables (p.ej., 30 min),
 
-asignación por especialidad (puede elegir médico si no se envía doctorId),
+✉️ notification-service (8084)Suscrito a eventos appointment.*, envía correos al paciente (mock en desarrollo, SMTP en producción).
 
-publica eventos appointment.created/rescheduled/cancelled.
+🐇 RabbitMQBus de eventos con topic exchanges: clinic.patients, clinic.doctors, clinic.appointments.
 
-✉️ notification-service (8084)
-Suscribe a appointment.* y envía correo al paciente (modo mock para desarrollo o SMTP real).
+🐘 PostgreSQL (Neon)Persistencia independiente para cada servicio.
 
-🐇 RabbitMQ
-Bus de eventos (topic exchanges): clinic.patients, clinic.doctors, clinic.appointments.
 
-🐘 PostgreSQL (Neon)
-Persistencia independiente por servicio.
+🔗 Interacciones Clave
 
-🔗 Interacciones clave
+REST: appointment-service consulta a patient-service y doctor-service para validar existencia, email y especialidad.  
+Eventos (AMQP):  
+Creación, reprogramación o cancelación de turnos → publicación en clinic.appointments con appointment.*.  
+notification-service consume estos eventos y genera correos, formateando fechas a la zona horaria America/Guayaquil.
 
-REST: appointment-service consulta a patient-service y doctor-service para validar existencia, email y especialidad.
 
-Eventos (AMQP):
 
-Al crear/reprogramar/cancelar un turno → se publica en clinic.appointments con appointment.*.
+🧠 Reglas de Negocio Destacadas
 
-notification-service consume y construye el correo (formateando fechas a zona America/Guayaquil).
-
-🧠 Reglas de negocio destacadas
-
-Disponibilidad: no se permite solapamiento de turnos (paciente/médico).
-
-Autoajuste: si la hora solicitada está ocupada, se propone el siguiente slot libre y se marca como autoAdjusted.
-
-Estados: SCHEDULED, RESCHEDULED, CANCELLED, COMPLETED.
-
-Especialidades soportadas (ej.): MEDICINA_GENERAL, PEDIATRIA, GINECOLOGIA, CARDIOLOGIA, DERMATOLOGIA, ODONTOLOGIA (extensible).
+Disponibilidad: No se permite solapamiento de turnos (paciente o médico).  
+Autoajuste: Si un horario está ocupado, se propone el siguiente slot libre y se marca como autoAdjusted.  
+Estados: SCHEDULED, RESCHEDULED, CANCELLED, COMPLETED.  
+Especialidades soportadas: MEDICINA_GENERAL, PEDIATRIA, GINECOLOGIA, CARDIOLOGIA, DERMATOLOGIA, ODONTOLOGIA (extensible).
 
 🛠️ Tecnologías
 
-Java 17 · Spring Boot 3 (Web, Validation, Data JPA, AMQP, Mail)
-
-PostgreSQL (Neon) · Hibernate JPA
-
-RabbitMQ (event-driven)
-
-Maven
-
-Docker & Docker Compose 🐳
-
+Java 17 · Spring Boot 3 (Web, Validation, Data JPA, AMQP, Mail)  
+PostgreSQL (Neon) · Hibernate JPA  
+RabbitMQ (event-driven)  
+Maven  
+Docker & Docker Compose 🐳  
 GitHub Actions 🚀 (CI para construir y publicar imágenes a GHCR)
 
 🚦 Operación & Calidad
 
-Errores consistentes con ProblemDetail (HTTP semántico).
+Errores manejados con ProblemDetail (HTTP semántico).  
+DTOs limpios para entrada/salida.  
+Timestamps en formato ISO-8601, convertidos a hora local para emails.  
+Tests con listener de notificaciones desactivable en entorno de prueba.  
+Escalabilidad mediante servicios independientes, acoplados por eventos, listos para réplicas detrás de un balanceador.
 
-DTOs limpios para entrada/salida.
+📈 Extensiones Futuras
 
-Timestamps en ISO-8601 (convertidos a local para emails).
-
-Tests: listener de notificaciones desactivable en entorno de prueba.
-
-Escalabilidad: servicios independientes, acoplados por eventos, preparados para réplicas detrás de un balanceador.
-
-📈 Extensiones futuras (ideas)
-
-Recordatorios automáticos (SMS/Email) ⏰
-
-Calendarios por médico y bloqueo de horarios 🗓️
-
-Auditoría y trazabilidad de eventos 🧾
-
-Métricas/observabilidad (Prometheus/Grafana) 📊
-
+Recordatorios automáticos (SMS/Email) ⏰  
+Calendarios por médico y bloqueo de horarios 🗓️  
+Auditoría y trazabilidad de eventos 🧾  
+Métricas/observabilidad con Prometheus/Grafana 📊  
 Autenticación/Autorización (API Gateway + OAuth2) 🔐
 
 En conjunto, el sistema ofrece una agenda médica robusta y extensible con bajo acoplamiento, alta cohesión y mensajería confiable para notificaciones en tiempo real.
