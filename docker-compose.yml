@@ -1,0 +1,72 @@
+version: '3.9'
+
+services:
+  # Bus de Mensajes
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"   # Puerto para la comunicación AMQP
+      - "15672:15672" # Puerto para la interfaz de gestión web
+    networks:
+      - clinic-net
+
+  # Microservicio de Doctores
+  doctor-service:
+    build: ./doctor-service
+    container_name: doctor-service
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_RABBITMQ_HOST=rabbitmq
+    depends_on:
+      - rabbitmq
+    networks:
+      - clinic-net
+
+  # Microservicio de Pacientes
+  patient-service:
+    build: ./patient-service
+    container_name: patient-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_RABBITMQ_HOST=rabbitmq
+    depends_on:
+      - rabbitmq
+    networks:
+      - clinic-net
+
+  # Microservicio de Turnos
+  appointment-service:
+    build: ./appointment-service
+    container_name: appointment-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - DOCTOR_URL=http://doctor-service:8080/api/v1/doctors
+      - PATIENT_URL=http://patient-service:8081/api/v1/patients
+    depends_on:
+      - doctor-service
+      - patient-service
+    networks:
+      - clinic-net
+
+  # Microservicio de Notificaciones
+  notification-service:
+    build: ./notification-service
+    container_name: notification-service
+    ports:
+      - "8084:8084"
+    environment:
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - PATIENT_URL=http://patient-service:8081/api/v1/patients
+    depends_on:
+      - patient-service
+    networks:
+      - clinic-net
+
+networks:
+  clinic-net:
+    driver: bridge
