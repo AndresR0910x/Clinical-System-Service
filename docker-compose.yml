@@ -1,71 +1,130 @@
 version: '3.9'
 
 services:
-  # Bus de Mensajes
   rabbitmq:
     image: rabbitmq:3.13-management
     container_name: rabbitmq
     ports:
-      - "5672:5672"   # Puerto para la comunicación AMQP
-      - "15672:15672" # Puerto para la interfaz de gestión web
+      - "5672:5672"     # AMQP
+      - "15672:15672"   # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
     networks:
       - clinic-net
+    restart: unless-stopped
 
-  # Microservicio de Doctores
   doctor-service:
-    image: branel1/doctor-service
+    image: branel1/doctor-service:latest
     container_name: doctor-service
     ports:
       - "8080:8080"
     environment:
-      - SPRING_RABBITMQ_HOST=rabbitmq
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: admin
+      SPRING_RABBITMQ_PASSWORD: admin
+      SPRING_RABBITMQ_LISTENER_SIMPLE_RETRY_ENABLED: "true"
+      SPRING_RABBITMQ_LISTENER_SIMPLE_RETRY_MAX_ATTEMPTS: 10
+      SPRING_RABBITMQ_LISTENER_SIMPLE_RETRY_INITIAL_INTERVAL: 2000
     depends_on:
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
     networks:
       - clinic-net
+    restart: unless-stopped
 
-  # Microservicio de Pacientes
   patient-service:
-    image: branel1/patient-service
+    image: branel1/patient-service:latest
     container_name: patient-service
     ports:
       - "8081:8081"
     environment:
-      - SPRING_RABBITMQ_HOST=rabbitmq
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: admin
+      SPRING_RABBITMQ_PASSWORD: admin
+      SPRING_RABBITMQ_LISTENER_SIMPLE_RETRY_ENABLED: "true"
+      SPRING_RABBITMQ_LISTENER_SIMPLE_RETRY_MAX_ATTEMPTS: 10
+      SPRING_RABBITMQ_LISTENER_SIMPLE_RETRY_INITIAL_INTERVAL: 2000
     depends_on:
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
     networks:
       - clinic-net
+    restart: unless-stopped
 
-  # Microservicio de Turnos
   appointment-service:
-    image: branel1/appointment-service
+    image: branel1/appointment-service:latest
     container_name: appointment-service
     ports:
       - "8082:8082"
     environment:
-      - SPRING_RABBITMQ_HOST=rabbitmq
-      - DOCTOR_URL=http://doctor-service:8080/api/v1/doctors
-      - PATIENT_URL=http://patient-service:8081/api/v1/patients
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: admin
+      SPRING_RABBITMQ_PASSWORD: admin
+      DOCTOR_URL: http://doctor-service:8080/api/v1/doctors
+      PATIENT_URL: http://patient-service:8081/api/v1/patients
+      SPRING_RABBITMQ_LISTENER_SIMPLE_RETRY_ENABLED: "true"
+      SPRING_RABBITMQ_LISTENER_SIMPLE_RETRY_MAX_ATTEMPTS: 10
+      SPRING_RABBITMQ_LISTENER_SIMPLE_RETRY_INITIAL_INTERVAL: 2000
     depends_on:
-      - doctor-service
-      - patient-service
+      rabbitmq:
+        condition: service_healthy
+      doctor-service:
+        condition: service_started
+      patient-service:
+        condition: service_started
     networks:
       - clinic-net
+    restart: unless-stopped
 
-  # Microservicio de Notificaciones
   notification-service:
-    image: branel1/notification-service
+    image: branel1/notification-service:latest
     container_name: notification-service
     ports:
       - "8084:8084"
     environment:
-      - SPRING_RABBITMQ_HOST=rabbitmq
-      - PATIENT_URL=http://patient-service:8081/api/v1/patients
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: admin
+      SPRING_RABBITMQ_PASSWORD: admin
+      PATIENT_URL: http://patient-service:8081/api/v1/patients
+      SPRING_RABBITMQ_LISTENER_SIMPLE_RETRY_ENABLED: "true"
+      SPRING_RABBITMQ_LISTENER_SIMPLE_RETRY_MAX_ATTEMPTS: 10
+      SPRING_RABBITMQ_LISTENER_SIMPLE_RETRY_INITIAL_INTERVAL: 2000
     depends_on:
-      - patient-service
+      rabbitmq:
+        condition: service_healthy
+      patient-service:
+        condition: service_started
     networks:
       - clinic-net
+    restart: unless-stopped
+
+  gateway:
+    image: branel1/gateway:latest
+    container_name: gateway
+    ports:
+      - "8083:8083"
+    depends_on:
+      doctor-service:
+        condition: service_started
+      patient-service:
+        condition: service_started
+      appointment-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+    networks:
+      - clinic-net
+    restart: unless-stopped
 
 networks:
   clinic-net:
