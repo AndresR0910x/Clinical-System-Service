@@ -1,0 +1,77 @@
+server:
+  port: 7070
+
+spring:
+  application:
+    name: API-GATEWAY
+  cloud:
+    gateway:
+      routes:
+        # PATIENT-SERVICE
+        - id: patient-service-root
+          uri: lb://PATIENT-SERVICE
+          predicates:
+            - Path=/patients         # <-- EXACTO
+          filters:
+            - SetPath=/api/v1/patients
+        - id: patient-service-wild
+          uri: lb://PATIENT-SERVICE
+          predicates:
+            - Path=/patients/**      # <-- CON WILDCARD
+          filters:
+            - RewritePath=/patients/(?<segment>.*), /api/v1/patients/${segment}
+
+        # DOCTOR-SERVICE
+        - id: doctor-service-root
+          uri: lb://DOCTOR-SERVICE
+          predicates:
+            - Path=/doctors
+          filters:
+            - SetPath=/api/v1/doctors
+        - id: doctor-service-wild
+          uri: lb://DOCTOR-SERVICE
+          predicates:
+            - Path=/doctors/**
+          filters:
+            - RewritePath=/doctors/(?<segment>.*), /api/v1/doctors/${segment}
+
+        # APPOINTMENT-SERVICE
+        - id: appointment-service-root
+          uri: lb://APPOINTMENT-SERVICE
+          predicates:
+            - Path=/appointments
+          filters:
+            - SetPath=/api/v1/appointments
+        - id: appointment-service-wild
+          uri: lb://APPOINTMENT-SERVICE
+          predicates:
+            - Path=/appointments/**
+          filters:
+            - RewritePath=/appointments/(?<segment>.*), /api/v1/appointments/${segment}
+
+        # NOTIFICATION (actuator opcional)
+        - id: notification-service-actuator-root
+          uri: lb://NOTIFICATION-SERVICE
+          predicates:
+            - Path=/notifications/actuator
+          filters:
+            - SetPath=/actuator
+        - id: notification-service-actuator-wild
+          uri: lb://NOTIFICATION-SERVICE
+          predicates:
+            - Path=/notifications/actuator/**
+          filters:
+            - RewritePath=/notifications/actuator/(?<segment>.*), /actuator/${segment}
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    hostname: localhost
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG   # temporal para ver qué ruta matchea
