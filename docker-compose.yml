@@ -13,7 +13,7 @@ services:
 
   # Microservicio de Doctores
   doctor-service:
-    build: ./doctor-service
+    image: branel1/doctor-service
     container_name: doctor-service
     ports:
       - "8080:8080"
@@ -26,7 +26,7 @@ services:
 
   # Microservicio de Pacientes
   patient-service:
-    build: ./patient-service
+    image: branel1/patient-service
     container_name: patient-service
     ports:
       - "8081:8081"
@@ -39,7 +39,7 @@ services:
 
   # Microservicio de Turnos
   appointment-service:
-    build: ./appointment-service
+    image: branel1/appointment-service
     container_name: appointment-service
     ports:
       - "8082:8082"
@@ -55,7 +55,7 @@ services:
 
   # Microservicio de Notificaciones
   notification-service:
-    build: ./notification-service
+    image: branel1/notification-service
     container_name: notification-service
     ports:
       - "8084:8084"
