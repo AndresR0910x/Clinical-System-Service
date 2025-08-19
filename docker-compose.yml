@@ -126,6 +126,15 @@ services:
       - clinic-net
     restart: unless-stopped
 
+  service-registry:
+    image: branel1/service-registry:latest
+    container_name: service-registry
+    ports:
+      - "8761:8761"
+    networks:
+      - clinic-net
+    restart: unless-stopped
+
 networks:
   clinic-net:
     driver: bridge
