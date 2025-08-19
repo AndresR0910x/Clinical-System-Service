@@ -12,12 +12,3 @@ WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8761
 ENTRYPOINT ["java", "-jar", "app.jar"]
-
-  service-registry:
-    image: branel1/service-registry:latest
-    container_name: service-registry
-    ports:
-      - "8761:8761"
-    networks:
-      - clinic-net
-    restart: unless-stopped
