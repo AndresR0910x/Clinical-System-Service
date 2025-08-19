@@ -1,6 +1,9 @@
 package com.root.appointment_service.repo;
 
 import com.root.appointment_service.domain.*;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 import java.time.Instant;
@@ -30,4 +33,12 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID> 
 
   // 🔽 NUEVO: lista del día por doctor (para construir slots)
   List<Appointment> findByDoctorIdAndStartAtBetweenOrderByStartAt(UUID doctorId, Instant dayStart, Instant dayEnd);
+
+  Page<Appointment> findByPatientId(UUID patientId, Pageable pageable);
+  Page<Appointment> findByDoctorId(UUID doctorId, Pageable pageable);
+
+  Page<Appointment> findByStatusInAndStartAtAfter(Collection<AppointmentStatus> statuses,
+                                                  Instant now,
+                                                  Pageable pageable);
+
 }

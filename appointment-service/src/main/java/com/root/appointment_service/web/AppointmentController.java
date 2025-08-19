@@ -62,4 +62,6 @@ public class AppointmentController {
                                                @RequestParam(required = false) Integer durationMinutes) {
         return app.getAvailability(doctorId, date, slotMinutes, workStart, workEnd, durationMinutes);
     }
+
+    
 }

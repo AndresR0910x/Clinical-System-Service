@@ -176,4 +176,6 @@ public class AppointmentAppService {
                 a.getStartAt(), a.getEndAt(), a.getStatus(), a.getNotes(), auto
         );
     }
+
+    
 }
